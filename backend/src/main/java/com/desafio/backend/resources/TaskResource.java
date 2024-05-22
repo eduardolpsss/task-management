@@ -14,6 +14,8 @@ import java.util.List;
 @RequestMapping(value = "/tasks")
 public class TaskResource {
 
+    public static final String ID = "/{id}";
+
     @Autowired
     private TaskService service;
 
@@ -23,7 +25,7 @@ public class TaskResource {
         return ResponseEntity.ok().body(list);
     }
 
-    @GetMapping(value = "/{id}")
+    @GetMapping(value = ID)
     public ResponseEntity<Task> findById(@PathVariable Long id) {
         Task obj = service.findById(id);
         return ResponseEntity.ok().body(obj);
@@ -32,18 +34,18 @@ public class TaskResource {
     @PostMapping
     public ResponseEntity<Task> insert(@RequestBody Task obj) {
         obj = service.insert(obj);
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path(ID)
                 .buildAndExpand(obj.getId()).toUri();
         return ResponseEntity.created(uri).body(obj);
     }
 
-    @DeleteMapping(value = "/{id}")
+    @DeleteMapping(value = ID)
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping(value = "/{id}")
+    @PutMapping(value = ID)
     public ResponseEntity<Task> update(@PathVariable Long id, @RequestBody Task obj) {
         obj = service.update(id, obj);
         return ResponseEntity.ok().body(obj);

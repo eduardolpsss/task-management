@@ -27,7 +27,7 @@ public class TaskService {
 
     public Task findById(Long id) {
         Optional<Task> obj = repository.findById(id);
-        return obj.orElseThrow(() -> new ResourceNotFoundException(id));
+        return obj.orElseThrow(() -> new ResourceNotFoundException("Object not found."));
     }
 
     public Task insert(Task obj) {
@@ -42,7 +42,7 @@ public class TaskService {
         try {
             repository.deleteById(id);
         } catch (EmptyResultDataAccessException e) {
-            throw new ResourceNotFoundException(id);
+            throw new ResourceNotFoundException("Object not found.");
         } catch (DataIntegrityViolationException e) {
             throw new DatabaseException(e.getMessage());
         }
@@ -54,7 +54,7 @@ public class TaskService {
             updateData(entity, obj);
             return repository.save(entity);
         } catch (EntityNotFoundException e) {
-            throw new ResourceNotFoundException(id);
+            throw new ResourceNotFoundException("Object not found.");
         }
     }
 
