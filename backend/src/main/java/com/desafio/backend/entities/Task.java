@@ -42,7 +42,7 @@ public class Task implements Serializable {
 
     public void setTitle(String title) {
         if (title == null || title.length() < 5) {
-            throw new TitleLengthException("Title must have at least 5 characters");
+            throw new TitleLengthException("Title must have at least 5 characters.");
         }
         this.title = title;
     }

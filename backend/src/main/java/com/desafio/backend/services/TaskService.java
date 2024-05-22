@@ -1,9 +1,11 @@
 package com.desafio.backend.services;
 
 import com.desafio.backend.entities.Task;
+import com.desafio.backend.entities.enums.TaskStatus;
 import com.desafio.backend.repositories.TaskRepository;
 import com.desafio.backend.services.exceptions.DatabaseException;
 import com.desafio.backend.services.exceptions.ResourceNotFoundException;
+import com.desafio.backend.services.exceptions.TooManyPendingTasksException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +31,10 @@ public class TaskService {
     }
 
     public Task insert(Task obj) {
+        long pendingTasksCount = repository.countByTaskStatus(TaskStatus.PENDING.getCode());
+        if (pendingTasksCount >= 10) {
+            throw new TooManyPendingTasksException("Cannot create more than 10 pending tasks.");
+        }
         return repository.save(obj);
     }
 
