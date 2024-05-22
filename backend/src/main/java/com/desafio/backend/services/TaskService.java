@@ -19,8 +19,8 @@ public class TaskService {
     @Autowired
     private TaskRepository repository;
 
-    public List<Task> findAll() {
-        return repository.findAll();
+    public List<Task> findAllTasksSortedByCreationDate() {
+        return repository.findAllByOrderByCreationDateAsc();
     }
 
     public Task findById(Long id) {

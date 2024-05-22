@@ -18,8 +18,8 @@ public class TaskResource {
     private TaskService service;
 
     @GetMapping
-    public ResponseEntity<List<Task>> findAll() {
-        List<Task> list = service.findAll();
+    public ResponseEntity<List<Task>> findAllOrderByCreationDateAsc() {
+        List<Task> list = service.findAllTasksSortedByCreationDate();
         return ResponseEntity.ok().body(list);
     }
 

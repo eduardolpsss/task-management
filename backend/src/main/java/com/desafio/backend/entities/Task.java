@@ -1,6 +1,7 @@
 package com.desafio.backend.entities;
 
 import com.desafio.backend.entities.enums.TaskStatus;
+import com.desafio.backend.entities.exceptions.TitleLengthException;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,32 +11,21 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "tb_task")
 public class Task implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Setter
-    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Setter
-    @Getter
     private String title;
-
-    @Setter
-    @Getter
     private String description;
-
-    @Getter
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "GMT")
     private Instant creationDate;
-
-    @Setter
-    @Getter
     private Integer taskStatus;
 
     public Task() {
@@ -48,6 +38,13 @@ public class Task implements Serializable {
         this.description = description;
         this.creationDate = Instant.now();
         setTaskStatus(taskStatus);
+    }
+
+    public void setTitle(String title) {
+        if (title == null || title.length() < 5) {
+            throw new TitleLengthException("Title must have at least 5 characters");
+        }
+        this.title = title;
     }
 
     public TaskStatus getTaskStatus() {
