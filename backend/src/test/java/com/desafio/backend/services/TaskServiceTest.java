@@ -3,7 +3,9 @@ package com.desafio.backend.services;
 import com.desafio.backend.entities.Task;
 import com.desafio.backend.entities.enums.TaskStatus;
 import com.desafio.backend.repositories.TaskRepository;
+import com.desafio.backend.services.exceptions.DatabaseException;
 import com.desafio.backend.services.exceptions.ResourceNotFoundException;
+import com.desafio.backend.services.exceptions.TooManyPendingTasksException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,92 +14,124 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class TaskServiceTest {
     @InjectMocks
     private TaskService service;
+
     @Mock
     private TaskRepository repository;
+
     private Task task;
     private Optional<Task> optionalTask;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        startTask();
+        task = new Task(1L, "Curso Java", "Udemy", TaskStatus.PENDING);
+        optionalTask = Optional.of(task);
     }
 
     @Test
-    void whenfindAllTasksSortedByCreationDateReturnListOfTasks() {
+    void whenFindAllTasksSortedByCreationDateReturnListOfTasks() {
         Mockito.when(repository.findAllByOrderByCreationDateAsc()).thenReturn(List.of(task));
 
         List<Task> response = service.findAllTasksSortedByCreationDate();
 
         Assertions.assertNotNull(response);
         Assertions.assertEquals(1, response.size());
-        Assertions.assertEquals(Task.class, response.get(0).getClass());
-        Assertions.assertEquals(1L, response.get(0).getId());
-        Assertions.assertEquals("Curso Java", response.get(0).getTitle());
-        Assertions.assertEquals("Udemy", response.get(0).getDescription());
-        Assertions.assertEquals(TaskStatus.PENDING, response.get(0).getTaskStatus());
+        Assertions.assertEquals(task, response.get(0));
     }
 
     @Test
-    void whenFindByIdThenReturnUserInstance() {
-        Mockito.when(repository.findById(Mockito.anyLong())).thenReturn(optionalTask);
+    void whenFindByIdThenReturnTaskInstance() {
+        Mockito.when(repository.findById(1L)).thenReturn(optionalTask);
 
         Task response = service.findById(1L);
 
         Assertions.assertNotNull(response);
-        Assertions.assertEquals(Task.class, response.getClass());
-        Assertions.assertEquals(1L, response.getId());
-        Assertions.assertEquals("Curso Java", response.getTitle());
-        Assertions.assertEquals("Udemy", response.getDescription());
-        Assertions.assertEquals(TaskStatus.PENDING, response.getTaskStatus());
+        Assertions.assertEquals(task, response);
     }
 
     @Test
-    void whenFindByIdThenReturnResourceNotFoundException() {
-        Mockito.when(repository.findById(Mockito.anyLong())).thenThrow(new ResourceNotFoundException("Object not found."));
+    void whenFindByIdThenThrowResourceNotFoundException() {
+        Mockito.when(repository.findById(1L)).thenReturn(Optional.empty());
 
-        try {
+        ResourceNotFoundException exception = Assertions.assertThrows(ResourceNotFoundException.class, () -> {
             service.findById(1L);
-        } catch (Exception ex) {
-            Assertions.assertEquals(ResourceNotFoundException.class, ex.getClass());
-            Assertions.assertEquals("Object not found.", ex.getMessage());
-        }
+        });
+
+        Assertions.assertEquals("Object not found.", exception.getMessage());
     }
 
     @Test
-    void whenInsertThenSuccess() {
-        Mockito.when(repository.save(Mockito.any())).thenReturn(task);
+    void whenInsertThenReturnSuccess() {
+        Mockito.when(repository.save(task)).thenReturn(task);
 
         Task response = service.insert(task);
 
         Assertions.assertNotNull(response);
-        Assertions.assertEquals(Task.class, response.getClass());
-        Assertions.assertEquals(1L, response.getId());
-        Assertions.assertEquals("Curso Java", response.getTitle());
-        Assertions.assertEquals("Udemy", response.getDescription());
-        Assertions.assertEquals(TaskStatus.PENDING, response.getTaskStatus());
+        Assertions.assertEquals(task, response);
     }
 
     @Test
-    void delete() {
+    void whenInsertWithTooManyPendingTasksThenThrowTooManyPendingTasksException() {
+        Mockito.when(repository.countByTaskStatus(TaskStatus.PENDING.getCode())).thenReturn(10L);
+
+        TooManyPendingTasksException exception = Assertions.assertThrows(TooManyPendingTasksException.class, () -> {
+            service.insert(task);
+        });
+
+        Assertions.assertEquals("Cannot create more than 10 pending tasks.", exception.getMessage());
     }
 
     @Test
-    void update() {
+    void whenDeleteThenReturnSuccess() {
+        Mockito.doNothing().when(repository).deleteById(1L);
+
+        service.delete(1L);
+
+        Mockito.verify(repository, Mockito.times(1)).deleteById(1L);
     }
 
-    private void startTask() {
-        task = new Task(1L, "Curso Java", "Udemy", TaskStatus.PENDING);
-        optionalTask = Optional.of(new Task(1L, "Curso Java", "Udemy", TaskStatus.PENDING));
+    @Test
+    void whenDeleteNonExistentTaskThenThrowResourceNotFoundException() {
+        Mockito.doThrow(new EmptyResultDataAccessException(1)).when(repository).deleteById(1L);
+
+        ResourceNotFoundException exception = Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+            service.delete(1L);
+        });
+
+        Assertions.assertEquals("Object not found.", exception.getMessage());
+    }
+
+    @Test
+    void whenDeleteTaskWithConstraintViolationThenThrowDatabaseException() {
+        Mockito.doThrow(new DataIntegrityViolationException("Data integrity violation")).when(repository).deleteById(1L);
+
+        DatabaseException exception = Assertions.assertThrows(DatabaseException.class, () -> {
+            service.delete(1L);
+        });
+
+        Assertions.assertEquals("Data integrity violation", exception.getMessage());
+    }
+
+    @Test
+    void whenUpdateThenReturnSuccess() {
+        Task updatedTask = new Task(1L, "Curso PHP", "Udemy", TaskStatus.CONCLUDED);
+
+        Mockito.when(repository.getReferenceById(1L)).thenReturn(task);
+        Mockito.when(repository.save(task)).thenReturn(updatedTask);
+
+        Task response = service.update(1L, updatedTask);
+
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals(updatedTask, response);
     }
 }
