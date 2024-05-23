@@ -1,6 +1,6 @@
 # Desafio Técnico - Sistema de Gerenciamento de Tarefas Simplificado
 
-Web services com Spring Boot e JPA/Hibernate utilizando H2 Database Engine. Aplicação back-end que permite aos usuários gerenciar tarefas diárias de forma simples.
+Web services com Spring Boot e JPA/Hibernate utilizando H2 Database Engine, o projeto possui cobertura de testes feitos utilizando JUnit e Mockito. Aplicação back-end que permite aos usuários gerenciar tarefas diárias de forma simples.
 
 ## Aplicação
 
